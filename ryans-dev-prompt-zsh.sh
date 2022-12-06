@@ -4,7 +4,7 @@
 # Sample output:
 # __________________________________________________________________.__________________________
 # ~/repos/some_repo
-# master [0|0]->origin/...
+# main [0|0]->origin/...
 # $ git ci -m "Some commit message that easily fits in 50 spaces"
 
 setopt promptsubst
@@ -36,7 +36,7 @@ RESET_COLOR_WR="%f"
 #
 # Rebasing status:
 # If the repo is currently rebasing then "(Rebasing)" is inserted.
-# e.g. # master [origin/master:0|2]
+# e.g. # main [origin/main:0|2]
 function git_info_bash {
 	inside_git_repo="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
 	if [ "$inside_git_repo" ]; then
@@ -56,10 +56,10 @@ function git_info_bash {
 			remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-);
 			remote_string="$remote"
 		else
-			# No tracking for this branch, so defualt to origin/master
+			# No tracking for this branch, so defualt to origin/main
 			remote_string="(No upstream) origin"
 			remote_path="origin/"
-			remote_branch="master"
+			remote_branch="main"
 		fi
 
         # Ahead/Behind
