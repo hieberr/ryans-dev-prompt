@@ -41,11 +41,11 @@ function git_info {
     local remote_path=""
     local remote_branch=""
     local remote_string=""
-    if [ $remote = "." ]; then
+    if [ "$remote" = "." ]; then
       # Branch is tracking another local branch.
       remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
       remote_string="local"
-    elif [ $remote != "" ]; then
+    elif [ "$remote" != "" ]; then
       # Branch is tracking a remote branch.
       remote_path="$remote/"
       remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
@@ -78,9 +78,9 @@ function git_info {
     local all_changed_files=$(git status -s)
 
     local ahead_color=""
-    if [ -n $all_changed_files ]; then
+    if [ -n "$all_changed_files" ]; then
       # There are some changes
-      if [ $untracked_files = "$all_changed_files" ] && [ -z $modified_files ]; then
+      if [ "$untracked_files" = "$all_changed_files" ] && [ -z "$modified_files" ]; then
         # Only added changes exist: Green
         ahead_color="%F{10}"
       else
