@@ -11,15 +11,8 @@ setopt promptsubst
 
 NEWLINE=$'\n'
 
-# Reset and default colors
 DEFAULT_COLOR="%F{240}" # light gray
 RESET_COLOR="%f"
-
-# Reset and default colors wrapped in '\[' and '\]' so that bash doesn't treat
-# it as extra white space and screw the cursor placement. Note that this is only
-# needed in places that are not inside a \$() (e.g. inside git_info()) for some reason.
-DEFAULT_COLOR_WR="%F{240}" # light gray
-RESET_COLOR_WR="%f"
 
 # The branch and the associated upstream remote/branch with the number of commits
 # that branch is ahead and behind the upstream branch.
@@ -37,9 +30,10 @@ RESET_COLOR_WR="%f"
 # Rebasing status:
 # If the repo is currently rebasing then "(Rebasing)" is inserted.
 # e.g. # main [origin/main:0|2]
-function git_info_bash {
+function git_info {
   inside_git_repo="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
-  if [ "$inside_git_repo" ]; then
+
+  if [ $inside_git_repo ]; then
     # The current branch
     branch=$(git rev-parse --abbrev-ref HEAD)
     # The remote that the branch tracks
@@ -92,36 +86,27 @@ function git_info_bash {
     # If the remote branch text contains or equals the branch text then replace it with "..." to save space.
     remote_branch_string="${remote_branch/$branch/...}"
 
-    # Construct the output
-    ahead_behind_part="[$ahead%f|$behind]"
-    #		ahead_behind_part="$DEFAULT_COLOR[$RESET_COLOR$ahead_color$ahead$RESET_COLOR$DEFAULT_COLOR|$behind]$RESET_COLOR"
+    # Need to assign bracket character to a variable otherwise it gets treated as an operater
+    # in the expansion below.
+    local bracket='['
 
-    local_part="$branch $rebasing_string$ahead_behind_part"
-    #		local_part="$DEFAULT_COLOR$branch $rebasing_string$RESET_COLOR$ahead_behind_part"
+    ahead_behind_part="$DEFAULT_COLOR$bracket$ahead_color$ahead$DEFAULT_COLOR|$behind]$RESET_COLOR"
+    local_part="$DEFAULT_COLOR$branch$RESET_COLOR"
+    upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
 
-    upstream_part="->$remote_string/$remote_branch_string"
-    #		upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
+    whole_string="$local_part $rebasing_string$ahead_behind_part$upstream_part"
+    whole_string_length=$(echo -n $whole_string | wc -m)
 
-    whole_string=$local_part$upstream_part
-    whole_string_length=$(printf $whole_string | wc -m)
-
-    # Split the output into multiple lines if needed.
-    if [ "$whole_string_length" -le "80" ]; then
+    # Split the output into multiple lines if too large.
+    if [ "$whole_string_length" -le "120" ]; then
       # The git info fits on one line.
-      # -e enables the \033 color escaping.
-      echo -e "$whole_string"
+      echo "$whole_string"
     else
       # The git info doesn't fit on a single line.
-      # -e enables the \033 color escaping.
-      echo -e "$local_part"
-      echo -e "$upstream_part"
+      echo "$local_part $rebasing_string$ahead_behind_part"
+      echo "$upstream_part"
     fi
   fi
-}
-
-function git_info {
-  result='$(git_info_bash)'
-  echo $result
 }
 
 # A nice visual seperator.  Also a measuring tape for writing commit messages.
@@ -132,17 +117,26 @@ function git_info {
 #     $ git ci -m "
 # (Note that I have aliased the "commit" command to "ci"
 function divider {
-  DIVIDER_COLOR="%F{45}"
+  DIVIDER_COLOR="%F{45}" # Teal
   # Space for the 'git ci -m "'  part of the message
   prefix="             "
   commit_space="                                                 .                        "
-  echo "$DIVIDER_COLOR%U$prefix$commit_space%u$RESET_COLOR_WR"
+  echo "$DIVIDER_COLOR%U$prefix$commit_space%u$RESET_COLOR"
 }
 
 function prompt {
-  PROMPT_COLOR="%F{45}"
-  echo "$PROMPT_COLOR$ $RESET_COLOR_WR"
+  PROMPT_COLOR="%F{45}" # Teal
+  echo "$PROMPT_COLOR$ $RESET_COLOR"
 }
 
+function directory {
+  echo "$DEFAULT_COLOR%1d $RESET_COLOR"
+}
+
+# Command to create the git information text. We can't just call git_info directly in PS1 since that
+# seems to only run once when the script is initialized. We want it to be called every time
+# the prompt updates. So, store the command itself rather than the output of the command.
+git_info_command='$(git_info)'
+
 # Assign the prompt format
-PS1="$(divider)${NEWLINE}$DEFAULT_COLOR_WR%1d $RESET_COLOR_WR$(git_info)${NEWLINE}$(prompt)"
+PS1="$(divider)${NEWLINE}$(directory)$git_info_command${NEWLINE}$(prompt)"
