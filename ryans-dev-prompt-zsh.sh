@@ -31,47 +31,56 @@ RESET_COLOR="%f"
 # If the repo is currently rebasing then "(Rebasing)" is inserted.
 # e.g. # main [origin/main:0|2]
 function git_info {
-  inside_git_repo="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
-
+  local inside_git_repo=$(git rev-parse --is-inside-work-tree 2>/dev/null)
   if [ $inside_git_repo ]; then
     # The current branch
-    branch=$(git rev-parse --abbrev-ref HEAD)
-    # The remote that the branch tracks
-    remote=$(git config branch.$branch.remote)
+    local branch=$(git rev-parse --abbrev-ref HEAD)
+    # The remote that is being tracked
+    local remote=$(git config branch.$branch.remote)
 
-    if [ "$remote" = "." ]; then
+    local remote_path=""
+    local remote_branch=""
+    local remote_string=""
+    if [ $remote = "." ]; then
       # Branch is tracking another local branch.
-      remote_path=""
       remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
       remote_string="local"
-    elif [ "$remote" != "" ]; then
+    elif [ $remote != "" ]; then
       # Branch is tracking a remote branch.
       remote_path="$remote/"
       remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
       remote_string="$remote"
     else
       # No tracking for this branch, so defualt to origin/main
-      remote_string="(No upstream) origin"
       remote_path="origin/"
       remote_branch="main"
+      remote_string="(No upstream) origin"
     fi
 
-    # Ahead/Behind
-    ahead_behind=$(git rev-list --left-right --count $branch...$remote_path$remote_branch | tr -s '\t' '|')
-    ahead=$(cut -d "|" -f1 <<<$ahead_behind)
-    behind=$(cut -d "|" -f2 <<<$ahead_behind)
+    # If the remote branch text contains or equals the branch text then replace it with "..." to save space.a
+    # For info aobut how this works see "bash parameter expansion"
+    # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+    # ${parameter/pattern/string} - text in parameter matching pattern is replaced with string.
+    remote_branch_string="${remote_branch/$branch/...}"
 
-    # Rebasing
-    rebasing_string="(Rebasing)"
+    # Commits ahead/behind
+    local ahead_behind=$(git rev-list --left-right --count $branch...$remote_path$remote_branch | tr -s '\t' '|')
+    local ahead=$(cut -d "|" -f1 <<<$ahead_behind)
+    local behind=$(cut -d "|" -f2 <<<$ahead_behind)
+
+    # Rebasing/merging status
+    local rebasing_string="(Rebasing)"
     test -d "$(git rev-parse --git-path rebase-merge)" || test -d "$(git rev-parse --git-path rebase-apply)" || rebasing_string=""
 
     # Tracked / untracked changes
-    modified_files="$(git ls-files -m)"
-    untracked_files="$(git status -s -uno)"
-    all_changed_files=$(git status -s)
-    if [ -n "$all_changed_files" ]; then
+    local modified_files=$(git ls-files -m)
+    local untracked_files=$(git status -s -uno)
+    local all_changed_files=$(git status -s)
+
+    local ahead_color=""
+    if [ -n $all_changed_files ]; then
       # There are some changes
-      if [ "$untracked_files" = "$all_changed_files" ] && [ -z "$modified_files" ]; then
+      if [ $untracked_files = "$all_changed_files" ] && [ -z $modified_files ]; then
         # Only added changes exist: Green
         ahead_color="%F{10}"
       else
@@ -83,22 +92,18 @@ function git_info {
       ahead_color=$DEFAULT_COLOR
     fi
 
-    # If the remote branch text contains or equals the branch text then replace it with "..." to save space.
-    remote_branch_string="${remote_branch/$branch/...}"
-
     # Need to assign bracket character to a variable otherwise it gets treated as an operater
     # in the expansion below.
     local bracket='['
 
-    ahead_behind_part="$DEFAULT_COLOR$bracket$ahead_color$ahead$DEFAULT_COLOR|$behind]$RESET_COLOR"
-    local_part="$DEFAULT_COLOR$branch$RESET_COLOR"
-    upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
+    local ahead_behind_part="$DEFAULT_COLOR$bracket$ahead_color$ahead$DEFAULT_COLOR|$behind]$RESET_COLOR"
+    local local_part="$DEFAULT_COLOR$branch$RESET_COLOR"
+    local upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
 
-    whole_string="$local_part $rebasing_string$ahead_behind_part$upstream_part"
-    whole_string_length=$(echo -n $whole_string | wc -m)
-
+    local whole_string="$local_part $rebasing_string$ahead_behind_part$upstream_part"
+    local whole_string_length=$(echo -n $whole_string | wc -m)
     # Split the output into multiple lines if too large.
-    if [ "$whole_string_length" -le "120" ]; then
+    if [ $whole_string_length -le "120" ]; then
       # The git info fits on one line.
       echo "$whole_string"
     else
@@ -117,15 +122,15 @@ function git_info {
 #     $ git ci -m "
 # (Note that I have aliased the "commit" command to "ci"
 function divider {
-  DIVIDER_COLOR="%F{45}" # Teal
+  local DIVIDER_COLOR="%F{45}" # Teal
   # Space for the 'git ci -m "'  part of the message
-  prefix="             "
-  commit_space="                                                 .                        "
+  local prefix="             "
+  local commit_space="                                                 .                        "
   echo "$DIVIDER_COLOR%U$prefix$commit_space%u$RESET_COLOR"
 }
 
 function prompt {
-  PROMPT_COLOR="%F{45}" # Teal
+  local PROMPT_COLOR="%F{45}" # Teal
   echo "$PROMPT_COLOR$ $RESET_COLOR"
 }
 
