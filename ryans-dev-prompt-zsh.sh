@@ -69,8 +69,12 @@ function git_info {
     local behind=$(cut -d "|" -f2 <<<$ahead_behind)
 
     # Rebasing/merging status
-    local rebasing_string="(Rebasing)"
-    test -d "$(git rev-parse --git-path rebase-merge)" || test -d "$(git rev-parse --git-path rebase-apply)" || rebasing_string=""
+    local rebase_merge_status=""
+    if [ -d "$(git rev-parse --git-path rebase-merge)" ]; then
+      rebase_merge_status="(Rebasing)"
+    elif [ -d "$(git rev-parse --git-path rebase-apply)" ]; then
+      rebase_merge_status="(Merging)"
+    fi
 
     # Tracked / untracked changes
     local modified_files=$(git ls-files -m)
@@ -100,7 +104,7 @@ function git_info {
     local local_part="$DEFAULT_COLOR$branch$RESET_COLOR"
     local upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
 
-    local whole_string="$local_part $rebasing_string$ahead_behind_part$upstream_part"
+    local whole_string="$local_part $rebase_merge_status$ahead_behind_part$upstream_part"
     local whole_string_length=$(echo -n $whole_string | wc -m)
     # Split the output into multiple lines if too large.
     if [ $whole_string_length -le "120" ]; then
@@ -108,7 +112,7 @@ function git_info {
       echo "$whole_string"
     else
       # The git info doesn't fit on a single line.
-      echo "$local_part $rebasing_string$ahead_behind_part"
+      echo "$local_part $rebase_merge_status$ahead_behind_part"
       echo "$upstream_part"
     fi
   fi
