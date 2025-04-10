@@ -32,7 +32,7 @@ RESET_COLOR="%f"
 # e.g. # main [origin/main:0|2]
 function git_info {
   local inside_git_repo=$(git rev-parse --is-inside-work-tree 2>/dev/null)
-  if [ $inside_git_repo ]; then
+  if [ "$inside_git_repo" = "true" ]; then
     # The current branch
     local branch=$(git rev-parse --abbrev-ref HEAD)
     # The remote that is being tracked
