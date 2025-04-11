@@ -36,19 +36,19 @@ function git_info {
     # The current branch
     local branch=$(git rev-parse --abbrev-ref HEAD)
     # The remote that is being tracked
-    local remote=$(git config branch.$branch.remote)
+    local remote=$(git config branch."$branch".remote)
 
     local remote_path=""
     local remote_branch=""
     local remote_string=""
     if [ "$remote" = "." ]; then
       # Branch is tracking another local branch.
-      remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
+      remote_branch=$(git config branch."$branch".merge | cut -d / -f 3-)
       remote_string="local"
     elif [ "$remote" != "" ]; then
       # Branch is tracking a remote branch.
       remote_path="$remote/"
-      remote_branch=$(git config branch.$branch.merge | cut -d / -f 3-)
+      remote_branch=$(git config branch."$branch".merge | cut -d / -f 3-)
       remote_string="$remote"
     else
       # No tracking for this branch, so defualt to origin/main
@@ -64,9 +64,9 @@ function git_info {
     remote_branch_string="${remote_branch/$branch/...}"
 
     # Commits ahead/behind
-    local ahead_behind=$(git rev-list --left-right --count $branch...$remote_path$remote_branch | tr -s '\t' '|')
-    local ahead=$(cut -d "|" -f1 <<<$ahead_behind)
-    local behind=$(cut -d "|" -f2 <<<$ahead_behind)
+    local ahead_behind=$(git rev-list --left-right --count "$branch...$remote_path$remote_branch" | tr -s '\t' '|')
+    local ahead=$(cut -d "|" -f1 <<<"$ahead_behind")
+    local behind=$(cut -d "|" -f2 <<<"$ahead_behind")
 
     # Rebasing/merging status
     local rebase_merge_status=""
@@ -105,9 +105,9 @@ function git_info {
     local upstream_part="$DEFAULT_COLOR->$remote_string/$remote_branch_string$RESET_COLOR"
 
     local whole_string="$local_part $rebase_merge_status$ahead_behind_part$upstream_part"
-    local whole_string_length=$(echo -n $whole_string | wc -m)
+    local whole_string_length=$(echo -n "$whole_string" | wc -m)
     # Split the output into multiple lines if too large.
-    if [ $whole_string_length -le "120" ]; then
+    if [ "$whole_string_length" -le "120" ]; then
       # The git info fits on one line.
       echo "$whole_string"
     else
